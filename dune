@@ -1,0 +1,4 @@
+(library
+ (name tester)
+ (public_name tester)
+ (libraries ))
