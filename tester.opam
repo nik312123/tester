@@ -1,7 +1,7 @@
 opam-version: "2.0"
 name: "tester"
 version: "1.0"
-synopsis: "tester testing framework"
+synopsis: "Tester testing framework"
 description: """
 tester is a unit test framework for OCaml. It allows the easy creation of
 unit tests for OCaml code. It is somewhat based on [OUnit2], another unit
@@ -10,9 +10,9 @@ test case, and it is easier to see whether a case has passed or failed.
 """
 maintainer: "Nikunj Chawla <nikchawla312@gmail.com>"
 authors: "Nikunj Chawla <nikchawla312@gmail.com>"
-homepage: "https://github.com/gildor478/ounit"
-dev-repo: "git+https://github.com/gildor478/ounit.git"
-bug-reports: "https://github.com/gildor478/ounit/issues"
+homepage: "https://github.com/nik312123/tester"
+dev-repo: "git+https://github.com/nik312123/tester.git"
+bug-reports: "https://github.com/nik312123/tester/issues"
 doc: "https://gildor478.github.io/ounit/"
 depends: [
     "ocaml" {>= "4.08.1"}

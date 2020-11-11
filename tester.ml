@@ -1,5 +1,8 @@
 (**
-    [Tester] is the module associated with simple test cases with better output then OUnit2 as desired
+    [Tester] is a unit test framework for OCaml. It allows the easy creation of
+    unit tests for OCaml code. It is somewhat based on [OUnit2], another unit
+    testing framework for OCaml. However, its output can be customized per
+    test case, and it is easier to see whether a case has passed or failed.
 *)
 
 (**
@@ -34,9 +37,13 @@ let create_test_eq (string_of_result: 'a -> string) (input: string) (expected_re
 
 (**
     [run_test] executes a given test case
-    @param name                                                                   The printed name that is associated with this test case
-    @param show_input                                                             True if the input string for the test should be printed
-    @param {compare_fun; string_of_result; input; expected_result; actual_result} The [test] to run
+    @param name             The printed name that is associated with this test case
+    @param show_input       True if the input string for the test should be printed
+    @param compare_fun      A function to compare the expected and actual results of the function
+    @param string_of_result A function to parse the output of the function
+    @param input            The string representing the input to the function
+    @param expected_result  The expected output of the function
+    @param actual_result    The value that the function actually returned
     @return unit
 *)
 let run_test (name: string) (show_input: bool) ({compare_fun; string_of_result; input; expected_result; actual_result}: 'a test): unit =
