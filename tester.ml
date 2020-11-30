@@ -39,32 +39,75 @@ let test_eq (string_of_result: 'a -> string) (input: string) (expected_result: '
     test (=) string_of_result input expected_result actual_result
 
 (**
-    [run_test] executes a given test case
+    [run_test_output] executes a given test case and returns true if the test passed and false otherwise
     @param name       The printed name that is associated with this test case
     @param show_input True if the input string for the test should be printed
+    @param show_pass  True if something should be printed if a test passes
     @param test       The instance of [t] to be run
+    @return True if the test passed and false if it did not
 *)
-let run_test (name: string) (show_input: bool) (test: 'a t): unit =
+let run_test_output (name: string) (show_input: bool) (show_pass: bool) (test: 'a t): bool =
     (* Retrieve the result of comparing the expected result with the actual result *)
     let passed = test.compare_fun test.expected_result test.actual_result in
     (* Print PASS if passed and FAIL if failed along with the name associated with the test case *)
-    print_string (if passed then "PASS" else "FAIL");
-    Printf.printf " – %s" name;
+    if not passed || show_pass then
+        let () = print_string (if passed then "PASS" else "FAIL") in
+        Printf.printf " – %s" name
+    else ();
     (* Print the input string associated with the test if show_input is true *)
-    let () = if show_input then Printf.printf " <- %s" test.input else () in
+    if show_input && (not passed || show_pass) then Printf.printf " <- %s" test.input else ();
     (* If passed, then simply print OK; otherwise, print the expected and actual values *)
-    if passed then print_endline " OK"
-    else Printf.printf "\n    Expected: %s\n      Actual: %s\n"
-                       (test.string_of_result test.expected_result) (test.string_of_result t.actual_result)
+    if passed then
+        let () = if show_pass then
+            print_endline " OK"
+        else ()
+        in true
+    else
+        let () = Printf.printf "\n    Expected: %s\n      Actual: %s\n"
+                               (test.string_of_result test.expected_result)
+                               (test.string_of_result test.actual_result)
+        in false
+
+(**
+    [run_test] executes a given test case
+    @param name       The printed name that is associated with this test case
+    @param show_input True if the input string for the test should be printed
+    @param show_pass  True if something should be printed if a test passes
+    @param test       The instance of [t] to be run
+    @return unit
+*)
+let run_test (name: string) (show_input: bool) (show_pass: bool) (test: 'a t): unit =
+    let _ = run_test_output name show_input show_pass test in ()
+
+(**
+    [run_tests_output] runs a [list] of [t]s using [run_test] and returns a tuple containing the number of tests that
+    passed and the total number of tests
+    @param name        The name that is associated with the given [test list]
+    @param show_inputs True if the input string for each test in the [test list] should be printed
+    @param show_passes True if something should be printed if a test passes for the individual test
+    @param show_num    True if the number of tests passed should be shown
+    @param tests       The [list] of [t]s to run
+    @return A tuple containing the number of tests that passed and the total number of tests
+*)
+let run_tests_output (name: string) (show_inputs: bool) (show_passes: bool) (show_num: bool) (tests: 'a t list): int * int =
+    Printf.printf "Running tests for %s:\n" name;
+    let run_test_part ((num_passed, num_tests): int * int) (test: 'a t): int * int =
+        let passed = run_test_output name show_inputs show_passes test in
+        (num_passed + (if passed then 1 else 0), num_tests + 1)
+    in let (num_passed, num_tests) = List.fold_left run_test_part (0, 0) tests
+    in if show_num then Printf.printf "%d/%d tests passed for %s\n" num_passed num_tests name
+    else ();
+    print_endline "";
+    (num_passed, num_tests)
 
 (**
     [run_tests] runs a [list] of [t]s using [run_test]
     @param name        The name that is associated with the given [test list]
     @param show_inputs True if the input string for each test in the [test list] should be printed
+    @param show_passes True if something should be printed if a test passes for the individual test
+    @param show_num    True if the number of tests passed should be shown
     @param tests       The [list] of [t]s to run
     @return unit
 *)
-let run_tests (name: string) (show_inputs: bool) (tests: 'a t list): unit =
-    Printf.printf "Running tests for %s:\n" name;
-    List.iter (run_test name show_inputs) tests;
-    print_endline ""
+let run_tests (name: string) (show_inputs: bool) (show_passes: bool) (show_num: bool) (tests: 'a t list): unit =
+    let _ = run_tests_output name show_inputs show_passes show_num tests in ()
