@@ -8,35 +8,39 @@
     The record type that is associated with a test; it consists of [compare_fun] a function to compare the expected and
     actual results of the function, [string_of_result] a function to parse the output of the function, [input] the
     string representing the input to the function, [expected_result] the expected output of the function, and
-    [actual_result] the value that the function actually returned
+    [actual_result_lazy] the lazily-evaluated result of actually executing the function
 *)
 type 'a t = {
-    compare_fun: 'a -> 'a -> bool; string_of_result: 'a -> string; input: string; expected_result: 'a; actual_result: 'a
+    compare_fun: 'a -> 'a -> bool;
+    string_of_result: 'a -> string;
+    input: string;
+    expected_result: 'a;
+    actual_result_lazy: 'a lazy_t
 }
 
 (**
     [test] creates an instance of the [t] record type with the given parameters
-    @param compare_fun      A function to compare the expected and actual results of the function
-    @param string_of_result A function to parse the output of the function
-    @param input            The string representing the input to the function
-    @param expected_result  The expected output of the function
-    @param actual_result    The value that the function actually returned
+    @param compare_fun        A function to compare the expected and actual results of the function
+    @param string_of_result   A function to parse the output of the function
+    @param input              The string representing the input to the function
+    @param expected_result    The expected output of the function
+    @param actual_result_lazy The lazily-evaluated result of actually executing the function
     @return The [t] instance with the given values
 *)
 let test (compare_fun: 'a -> 'a -> bool) (string_of_result: 'a -> string) (input: string) (expected_result: 'a)
-(actual_result: 'a): 'a t =
-    {compare_fun; string_of_result; input; expected_result; actual_result}
+(actual_result_lazy: 'a lazy_t): 'a t =
+    {compare_fun; string_of_result; input; expected_result; actual_result_lazy}
 
 (**
     [test_eq] creates an instance of the [t] record type with the given parameters and (=) as [compare_fun]
-    @param string_of_result A function to parse the output of the function
-    @param input            The string representing the input to the function
-    @param expected_result  The expected output of the function
-    @param actual_result    The value that the function actually returned
+    @param string_of_result   A function to parse the output of the function
+    @param input              The string representing the input to the function
+    @param expected_result    The expected output of the function
+    @param actual_result_lazy The lazily-evaluated result of actually executing the function
     @return The [t] instance with the given values
 *)
-let test_eq (string_of_result: 'a -> string) (input: string) (expected_result: 'a) (actual_result: 'a): 'a t =
-    test (=) string_of_result input expected_result actual_result
+let test_eq (string_of_result: 'a -> string) (input: string) (expected_result: 'a) (actual_result_lazy: 'a lazy_t):
+'a t = test (=) string_of_result input expected_result actual_result_lazy
 
 (**
     [run_test_output] executes a given test case and returns true if the test passed and false otherwise
@@ -48,7 +52,7 @@ let test_eq (string_of_result: 'a -> string) (input: string) (expected_result: '
 *)
 let run_test_output (name: string) (show_input: bool) (show_pass: bool) (test: 'a t): bool =
     (* Retrieve the result of comparing the expected result with the actual result *)
-    let passed = test.compare_fun test.expected_result test.actual_result in
+    let passed = test.compare_fun test.expected_result (Lazy.force test.actual_result_lazy) in
     (* Print PASS if passed and FAIL if failed along with the name associated with the test case *)
     if not passed || show_pass then
         let () = print_string (if passed then "PASS" else "FAIL") in
@@ -65,7 +69,7 @@ let run_test_output (name: string) (show_input: bool) (show_pass: bool) (test: '
     else
         let () = Printf.printf "\n    Expected: %s\n      Actual: %s\n"
                                (test.string_of_result test.expected_result)
-                               (test.string_of_result test.actual_result)
+                               (test.string_of_result (Lazy.force test.actual_result_lazy))
         in false
 
 (**
