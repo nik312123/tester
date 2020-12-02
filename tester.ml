@@ -93,7 +93,8 @@ let run_test (name: string) (show_input: bool) (show_pass: bool) (test: 'a t): u
     @param tests       The [list] of [t]s to run
     @return A tuple containing the number of tests that passed and the total number of tests
 *)
-let run_tests_output (name: string) (show_inputs: bool) (show_passes: bool) (show_num: bool) (tests: 'a t list): int * int =
+let run_tests_output (name: string) (show_inputs: bool) (show_passes: bool) (show_num: bool) (tests: 'a t list):
+int * int =
     Printf.printf "Running tests for %s:\n" name;
     let run_test_part ((num_passed, num_tests): int * int) (test: 'a t): int * int =
         let passed = run_test_output name show_inputs show_passes test in
