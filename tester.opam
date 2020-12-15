@@ -13,7 +13,7 @@ authors: "Nikunj Chawla <nikchawla312@gmail.com>"
 homepage: "https://github.com/nik312123/tester"
 dev-repo: "git+https://github.com/nik312123/tester.git"
 bug-reports: "https://github.com/nik312123/tester/issues"
-doc: ""
+doc: "https://nik312123.github.io/ocamlLibDocs/tester/Tester/"
 depends: [
     "ocaml" {>= "4.08.1"}
     "dune" {>= "2.7.1"}
