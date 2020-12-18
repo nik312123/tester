@@ -2,6 +2,21 @@
     [Tester] is a unit test framework for OCaml. It allows the easy creation of unit tests for OCaml code. It is
     somewhat based on {{:https://tinyurl.com/OUnit2} OUnit2}, another unit testing framework for OCaml. However, its
     output can be customized per test case, and it is easier to see whether a case has passed or failed.
+    
+    Copyright (C) 2020 Nikunj Chawla
+    
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+    
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 *)
 
 (**
