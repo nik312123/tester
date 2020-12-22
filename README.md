@@ -6,11 +6,11 @@ Used to unit test functions and code.
 
 ## Documentation
 
-The documentation for the `Tester` module is present here: [Tester documentation](https://nik312123.github.io/ocamlLibDocs/tester/Tester/)
+The documentation for the `Tester` module is present here: [Tester documentation](https://nik312123.github.io/ocamlLibDocs/tester/Tester/).
 
 ## Installation
 
-There are a few ways in which you can use this package.
+There are a few ways in which you can use this package:
 
 ### Using it only in your local project
 
@@ -58,6 +58,16 @@ Then, in the `dune` file corresponding to the `.ml` file(s) in question, you can
 
 **2\. If your project is built using `ocamlbuild`**
 
+When building using `ocamlbuild`, include the library directory in the locations to search for dependencies.
+
+Example:
+
+If `[example_path]` is the path for `example.ml` and `[tester_path]` is the path for `tester.ml` where both paths are subdirectories of the workspace directory, then the following would be the command to build `example.byte` using the `Tester` module:
+
+```bash
+ocamlbuild -use-ocamlfind -I [example_path] -I [tester_path] example.byte
+```
+
 ### Installing it in your `opam` switch and using it in a project
 
 Clone the repository wherever you would like:
@@ -90,14 +100,12 @@ Then, in the `dune` file corresponding to the `.ml` file(s) in question, you can
 
 **2\. If your project is built using `ocamlbuild`**
 
-When building using `ocamlbuild`, include the library in your packages
+When building using `ocamlbuild`, include the library in your packages.
 
 Example:
 
-If `[example_path]` is the path for `example.ml` and `[tester_path]` is the path for `tester.ml` where both paths are subdirectories of the workspace directory, then the following would be the command to build `example.byte` using the `Tester` module:
-
 ```bash
-ocamlbuild -use-ocamlfind -I [example_path] -I [tester_path] example.byte
+ocamlbuild -pkgs tester example.byte
 ```
 
 ## Terms of Use
