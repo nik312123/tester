@@ -87,7 +87,7 @@ let run_test_res (name: string) (show_input: bool) (show_pass: bool) (test: 'a t
                 let () = show_failure (test.string_of_result actual_result) in
                 FailureResult (fn_res |> fn_res_get_res)
             | Except e ->
-                let () = show_failure ("Exception occurred: " ^ (Printexc.to_string e)) in
+                let () = show_failure ("Exception occurred – " ^ (Printexc.to_string e)) in
                 FailureExcept (fn_res |> fn_res_get_exn)
 
 let run_test (name: string) (show_input: bool) (show_pass: bool) (test: 'a t): unit =
