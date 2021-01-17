@@ -65,12 +65,42 @@ let test_eq (string_of_result: 'a -> string) (input: string) (expected_result: '
     @param test       The instance of {!t} to be run
     @return [true] if the test passed and [false] if it did not
 *)
-let run_test_res (name: string) (show_input: bool) (show_pass: bool) (test: 'a t): bool =
+type 'a fn_res_t =
+    | Res of 'a
+    | Except of exn
+
+let fn_res_get_res: 'a fn_res_t -> 'a = function
+    | Res r -> r
+    | _ -> failwith "fn_res_t is not Res"
+
+let fn_res_get_exn: 'a fn_res_t -> exn = function
+    | Except e -> e
+    | _ -> failwith "fn_res_t is not Except"
+
+type 'a run_test_res_t =
+    | Pass of 'a
+    | FailureResult of 'a
+    | FailureExcept of exn
+
+let result_passed: 'a run_test_res_t -> bool = function
+    | Pass _ -> true
+    | _ -> false
+
+let run_test_res (name: string) (show_input: bool) (show_pass: bool) (test: 'a t): 'a run_test_res_t =
+    let show_failure (fail_str: string): unit =
+        Printf.printf "\n    Expected: %s\n      Actual: %s\n"
+            (test.string_of_result test.expected_result)
+            fail_str
     (* Retrieve the result of comparing the expected result with the actual result *)
-    let actual_result = Lazy.force test.actual_result_lazy in
-    let passed = test.pass_pred test.expected_result actual_result in
+    in let fn_res =
+        try Res (Lazy.force test.actual_result_lazy)
+        with e -> Except e
+    in let passed =
+        match fn_res with
+            | Res actual_result -> test.pass_pred test.expected_result actual_result
+            | Except _ -> false
     (* Print PASS if passed and FAIL if failed along with the name associated with the test case *)
-    if not passed || show_pass then
+    in if not passed || show_pass then
         let () = print_string (if passed then "PASS" else "FAIL") in
         Printf.printf " – %s" name
     else ();
@@ -81,12 +111,15 @@ let run_test_res (name: string) (show_input: bool) (show_pass: bool) (test: 'a t
         let () = if show_pass then
             print_endline " OK"
         else ()
-        in true
+        in Pass (fn_res |> fn_res_get_res)
     else
-        let () = Printf.printf "\n    Expected: %s\n      Actual: %s\n"
-                               (test.string_of_result test.expected_result)
-                               (test.string_of_result actual_result)
-        in false
+        match fn_res with
+            | Res actual_result ->
+                let () = show_failure (test.string_of_result actual_result) in
+                FailureResult (fn_res |> fn_res_get_res)
+            | Except e ->
+                let () = show_failure ("Exception occurred: " ^ (Printexc.to_string e)) in
+                FailureExcept (fn_res |> fn_res_get_exn)
 
 (**
     [run_test] executes a given test case
