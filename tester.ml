@@ -143,16 +143,19 @@ let run_test (name: string) (show_input: bool) (show_pass: bool) (test: 'a t): u
     @return A tuple containing the number of tests that passed and the total number of tests
 *)
 let run_tests_res (name: string) (show_inputs: bool) (show_passes: bool) (show_num: bool) (tests: 'a t list):
-int * int =
+int * int * int =
     Printf.printf "Running tests for %s:\n" name;
-    let run_test_part ((num_passed, num_tests): int * int) (test: 'a t): int * int =
-        let passed = run_test_res name show_inputs show_passes test in
-        (num_passed + (if passed then 1 else 0), num_tests + 1)
-    in let (num_passed, num_tests) = List.fold_left run_test_part (0, 0) tests
-    in if show_num then Printf.printf "%d/%d tests passed for %s\n" num_passed num_tests name
+    (* Fold function to accumulate the results of each test *)
+    let run_test_part ((num_passed, num_failed, num_err): int * int * int) (test: 'a t): int * int * int =
+        match run_test_res name show_inputs show_passes test with
+            | Pass _ -> (num_passed + 1, num_failed, num_err)
+            | FailureResult _ -> (num_passed, num_failed + 1, num_err)
+            | FailureExcept _ -> (num_passed, num_failed, num_err + 1)
+    in let (num_passed, num_failed, num_err) = List.fold_left run_test_part (0, 0, 0) tests
+    in if show_num then Printf.printf "%d/%d tests passed for %s\n" num_passed (num_failed + num_err) name
     else ();
     print_endline "";
-    (num_passed, num_tests)
+    (num_passed, num_failed, num_err)
 
 (**
     [run_tests] runs a [list] of {!t}s using {!run_test}
