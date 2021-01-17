@@ -34,17 +34,32 @@ let test (pass_pred: 'a -> 'a -> bool) (string_of_result: 'a -> string) (input: 
 let test_eq (string_of_result: 'a -> string) (input: string) (expected_result: 'a) (actual_result_lazy: 'a lazy_t):
 'a t = test (=) string_of_result input expected_result actual_result_lazy
 
+(**
+    Type for temporarily storing the result of evaluating {!actual_result_lazy}, including exceptions raised
+*)
 type 'a fn_res_t =
     | Res of 'a
-    | Except of exn
+    | Exn of exn
 
+(**
+    [fn_res_get_res t] returns [v] if [t] is [Res v] and raises [Invalid_argument] otherwise
+    @param t The [fn_res_t] from which [fn_res_get_res] will attempt to extract its result
+    @return [v] if [t] is [Res v]
+    @raise Invalid_argument Raised if [t] is not [Res v]
+*)
 let fn_res_get_res: 'a fn_res_t -> 'a = function
     | Res r -> r
-    | _ -> failwith "fn_res_t is not Res"
+    | _ -> invalid_arg "fn_res_t is not Res"
 
+(**
+    [fn_res_get_exn t] returns [e] if [t] is [Exn e] and raises [Invalid_argument] otherwise
+    @param t The [fn_res_t] from which [fn_res_get_res] will attempt to extract its exception
+    @return [e] if [t] is [Exn e]
+    @raise Invalid_argument Raised if [t] is not [Exn e]
+*)
 let fn_res_get_exn: 'a fn_res_t -> exn = function
-    | Except e -> e
-    | _ -> failwith "fn_res_t is not Except"
+    | Exn e -> e
+    | _ -> invalid_arg "fn_res_t is not Except"
 
 type 'a run_test_res_t =
     | Pass of 'a
@@ -63,11 +78,11 @@ let run_test_res (name: string) (show_input: bool) (show_pass: bool) (test: 'a t
     (* Retrieve the result of comparing the expected result with the actual result *)
     in let fn_res =
         try Res (Lazy.force test.actual_result_lazy)
-        with e -> Except e
+        with e -> Exn e
     in let passed =
         match fn_res with
             | Res actual_result -> test.pass_pred test.expected_result actual_result
-            | Except _ -> false
+            | Exn _ -> false
     (* Print PASS if passed and FAIL if failed along with the name associated with the test case *)
     in if not passed || show_pass then
         let () = print_string (if passed then "PASS" else "FAIL") in
@@ -86,7 +101,7 @@ let run_test_res (name: string) (show_input: bool) (show_pass: bool) (test: 'a t
             | Res actual_result ->
                 let () = show_failure (test.string_of_result actual_result) in
                 FailureResult (fn_res |> fn_res_get_res)
-            | Except e ->
+            | Exn e ->
                 let () = show_failure ("Exception occurred – " ^ (Printexc.to_string e)) in
                 FailureExcept (fn_res |> fn_res_get_exn)
 
