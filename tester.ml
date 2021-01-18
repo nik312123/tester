@@ -118,8 +118,7 @@ int * int * int =
             | FailureResult _ -> (num_passed, num_failed + 1, num_err)
             | FailureExcept _ -> (num_passed, num_failed, num_err + 1)
     in let (num_passed, num_failed, num_err) = List.fold_left run_test_part (0, 0, 0) tests
-    in if show_num then Printf.printf "%d/%d tests passed for %s\n" num_passed (num_failed + num_err) name
-    else ();
+    in if show_num then Printf.printf "%d/%d tests passed for %s\n" num_passed (num_passed + num_failed + num_err) name;
     print_endline "";
     (num_passed, num_failed, num_err)
 
