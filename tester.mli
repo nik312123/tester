@@ -74,7 +74,7 @@ val run_test_res: string -> bool -> bool -> 'a t -> 'a run_test_res_t
     @param show_input [true] if the input string for the test should be printed
     @param show_pass  [true] if something should be printed if a test passes
     @param test       The instance of {!t} to be run
-    @return unit
+    @return Unit
 *)
 val run_test: string -> bool -> bool -> 'a t -> unit
 
@@ -99,6 +99,6 @@ val run_tests_res: string -> bool -> bool -> bool -> 'a t list -> int * int * in
     @param show_passes [true] if something should be printed if a test passes for the individual test
     @param show_num    [true] if the number of tests passed should be shown
     @param tests       The [list] of {!t}s to run
-    @return unit
+    @return Unit
 *)
 val run_tests: string -> bool -> bool -> bool -> 'a t list -> unit

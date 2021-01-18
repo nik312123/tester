@@ -2,7 +2,7 @@
 
 ## Short Description
 
-Used to unit test functions and code.
+Used to unit test functions and code
 
 ## Documentation
 
