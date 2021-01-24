@@ -72,9 +72,10 @@ let result_passed: 'a run_test_res_t -> bool = function
 
 let run_test_res (name: string) (show_input: bool) (show_pass: bool) (test: 'a t): 'a run_test_res_t =
     let show_failure (fail_str: string): unit =
-        Printf.printf "\n    Expected: %s\n      Actual: %s\n"
+        Printf.printf "\n    Expected: %s\n      Actual: %s"
             (test.string_of_result test.expected_result)
-            fail_str
+            fail_str;
+        print_newline ()
     (* Retrieve the result of comparing the expected result with the actual result *)
     in let fn_res =
         try Res (Lazy.force test.actual_result_lazy)
@@ -92,9 +93,10 @@ let run_test_res (name: string) (show_input: bool) (show_pass: bool) (test: 'a t
     if show_input && (not passed || show_pass) then Printf.printf " <- %s" test.input else ();
     (* If passed, then simply print OK; otherwise, print the expected and actual values *)
     if passed then
-        let () = if show_pass then
-            print_endline " OK"
-        else ()
+        let () =
+            if show_pass
+            then let () = print_string " OK" in print_newline ()
+            else ()
         in Pass (fn_res |> fn_res_get_res)
     else
         match fn_res with
@@ -110,7 +112,7 @@ let run_test (name: string) (show_input: bool) (show_pass: bool) (test: 'a t): u
 
 let run_tests_res (name: string) (show_inputs: bool) (show_passes: bool) (show_num: bool) (tests: 'a t list):
 int * int * int =
-    Printf.printf "Running tests for %s:\n" name;
+    Printf.printf "Running tests for %s:" name; print_newline ();
     (* Fold function to accumulate the results of each test *)
     let run_test_part ((num_passed, num_failed, num_err): int * int * int) (test: 'a t): int * int * int =
         match run_test_res name show_inputs show_passes test with
@@ -119,7 +121,7 @@ int * int * int =
             | FailureExcept _ -> (num_passed, num_failed, num_err + 1)
     in let (num_passed, num_failed, num_err) = List.fold_left run_test_part (0, 0, 0) tests
     in if show_num then Printf.printf "%d/%d tests passed for %s\n" num_passed (num_passed + num_failed + num_err) name;
-    print_endline "";
+    print_newline ();
     (num_passed, num_failed, num_err)
 
 let run_tests (name: string) (show_inputs: bool) (show_passes: bool) (show_num: bool) (tests: 'a t list): unit =
