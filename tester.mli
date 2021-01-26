@@ -20,53 +20,61 @@
 *)
 
 (**
-    The record type that is associated with a test; it consists of [pass_pred] a function to test if the expected result
-    and actual result match, [string_of_result] a function to convert the output of the function to a [string], [input]
-    the [string] representing the input to the function, [expected_result] the expected output of the function, and
-    [actual_result_lazy] the lazily-evaluated result of actually executing the function
+    The record type that is associated with a test
 *)
-type 'a t = {
-    pass_pred: 'a -> 'a -> bool;
-    string_of_result: 'a -> string;
-    input: string;
-    expected_result: 'a;
-    actual_result_lazy: 'a lazy_t;
-}
+type 'a t
 
 (**
     [test] creates an instance of the {!t} record type with the given parameters
-    @param pass_pred          A function to compare the expected and actual results of the function
-    @param string_of_result   A function to parse the output of the function
-    @param input              The string representing the input to the function
-    @param expected_result    The expected output of the function
-    @param actual_result_lazy The lazily-evaluated result of actually executing the function
+    @param pass_pred          A function to compare the expected and actual results of the computationally-delayed
+                              expression
+    @param string_of_result   A function to parse the output of the computationally-delayed expression
+    @param input              The string representing the input for the test
+    @param expected_result    The expected output of the computationally-delayed expression
+    @param actual_result_lazy The lazily-evaluated result of actually executing the computationally-delayed expression
     @return The {!t} instance with the given values
 *)
 val test: ('a -> 'a -> bool) -> ('a -> string) -> string -> 'a -> 'a lazy_t -> 'a t
 
 (**
-    [test_eq] creates an instance of the {!t} record type with the given parameters and (=) as {!pass_pred}
-    @param string_of_result   A function to parse the output of the function
-    @param input              The string representing the input to the function
-    @param expected_result    The expected output of the function
-    @param actual_result_lazy The lazily-evaluated result of actually executing the function
+    [test_eq] creates an instance of the {!t} record type with the given parameters and (=) as [pass_pred] from {!test}
+    @param string_of_result   A function to parse the output of the computationally-delayed expression
+    @param input              The string representing the input for the test
+    @param expected_result    The expected output of the computationally-delayed expression
+    @param actual_result_lazy The lazily-evaluated result of actually executing the computationally-delayed expression
     @return The {!t} instance with the given values
 *)
 val test_eq: ('a -> string) -> string -> 'a -> 'a lazy_t -> 'a t
 
 (**
+    [test_exn] creates an instance of the {!t} record type with the given parameters
+    @param pass_pred          A function to compare the expected and actual exceptions for the computationally-delayed
+                              expression
+    @param string_of_exn      A function to parse the exception raised by the computationally-delayed expression
+    @param input              The string representing the input for the test
+    @param except_cond_str    The string to print as what was expected if [pass_pred] fails
+    @param actual_result_lazy The lazily-evaluated result of actually executing the computationally-delayed expression
+    @return The {!t} instance with the given values
+*)
+val test_exn: (exn -> bool) -> (exn -> string) -> string -> string -> 'a lazy_t -> 'a t
+
+(**
     [run_test_res_t] includes the possible results of running {!run_test_res}:
     
-    – [Pass] if the result of evaluating {!t.actual_result_lazy} is equivalent to {!t.expected_result} as determined by
-    {!t.pass_pred}
+    – [PassResult] if the result of executing the provided expression is equivalent to the expected result as determined
+    by [pass_pred] from the function that created {!t}
     
-    – [FailureResult] if the result of evaluating {!t.actual_result_lazy} is not equivalent to {!t.expected_result} as
-    determined by {!t.pass_pred}
+    - [PassExcept] if the exception raised when executing the provided expression is equivalent to the expected
+    exception as determined by [pass_pred] from the function that created {!t}
     
-    – [FailureExcept] if evaluating {!t.actual_result_lazy} causes an exception to be raised
+    – [FailureResult] if the result of evaluating the provided expression is not equivalent to the expected outcome as
+    determined by [pass_pred] from the function that created {!t}
+    
+    – [FailureExcept] if evaluating the provided expression causes an exception to be raised
 *)
 type 'a run_test_res_t =
-    | Pass of 'a
+    | PassResult of 'a
+    | PassExcept of exn
     | FailureResult of 'a
     | FailureExcept of exn
 

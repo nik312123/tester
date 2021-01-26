@@ -1,68 +1,93 @@
+(**
+    [pass_pred_t] is the type of predicate that the test is using depending on whether testing for output or testing for
+    exceptions
+*)
+type 'a pass_pred_t =
+    | PredRes of ('a -> 'a -> bool)
+    | PredExn of (exn -> bool)
+
+(**
+    The record type that is associated with a test; it consists of [pass_pred] a function to test if the expected result
+    and actual result match, [string_of_result] a function to convert the output of the computationally-delayed
+    expression to a [string] if not testing for an exception, [string_of_exn] a function to convert the exception raised
+    by the computationally-delayed expression if not testing for the output, [input] the [string] representing the input
+    to the function, [expected_result] the expected output of the function if testing for function output,
+    [except_cond_str] the [string] to print as what was expected if the test is an exception test and if [pass_pred]
+    fails, and [actual_result_lazy] the lazily-evaluated result of actually executing the function
+*)
 type 'a t = {
-    pass_pred: 'a -> 'a -> bool;
+    pass_pred: 'a pass_pred_t;
     string_of_result: 'a -> string;
+    string_of_exn: exn -> string;
     input: string;
-    expected_result: 'a;
+    expected_result: 'a option;
+    except_cond_str: string;
     actual_result_lazy: 'a lazy_t
 }
 
 let test (pass_pred: 'a -> 'a -> bool) (string_of_result: 'a -> string) (input: string) (expected_result: 'a)
 (actual_result_lazy: 'a lazy_t): 'a t =
-    {pass_pred; string_of_result; input; expected_result; actual_result_lazy}
+    {
+        pass_pred = PredRes pass_pred;
+        string_of_result;
+        string_of_exn = Fun.const "";
+        input;
+        expected_result = Some expected_result;
+        except_cond_str = "";
+        actual_result_lazy
+    }
 
 let test_eq (string_of_result: 'a -> string) (input: string) (expected_result: 'a) (actual_result_lazy: 'a lazy_t):
 'a t = test (=) string_of_result input expected_result actual_result_lazy
 
-(**
-    Type for temporarily storing the result of evaluating {!actual_result_lazy}, including exceptions raised
-*)
-type 'a fn_res_t =
-    | Res of 'a
-    | Exn of exn
-
-(**
-    [fn_res_get_res t] returns [v] if [t] is [Res v] and raises [Invalid_argument] otherwise
-    @param t The [fn_res_t] from which [fn_res_get_res] will attempt to extract its result
-    @return [v] if [t] is [Res v]
-    @raise Invalid_argument Raised if [t] is not [Res v]
-*)
-let fn_res_get_res: 'a fn_res_t -> 'a = function
-    | Res r -> r
-    | _ -> invalid_arg "fn_res_t is not Res"
-
-(**
-    [fn_res_get_exn t] returns [e] if [t] is [Exn e] and raises [Invalid_argument] otherwise
-    @param t The [fn_res_t] from which [fn_res_get_res] will attempt to extract its exception
-    @return [e] if [t] is [Exn e]
-    @raise Invalid_argument Raised if [t] is not [Exn e]
-*)
-let fn_res_get_exn: 'a fn_res_t -> exn = function
-    | Exn e -> e
-    | _ -> invalid_arg "fn_res_t is not Except"
+let test_exn (pass_pred: exn -> bool) (string_of_exn: exn -> string) (input: string) (except_cond_str: string)
+(actual_result_lazy: 'a lazy_t):
+'a t =
+    {
+        pass_pred = PredExn pass_pred;
+        string_of_result = Fun.const "";
+        string_of_exn;
+        input;
+        expected_result = None;
+        except_cond_str;
+        actual_result_lazy
+    }
 
 type 'a run_test_res_t =
-    | Pass of 'a
+    | PassResult of 'a
+    | PassExcept of exn
     | FailureResult of 'a
     | FailureExcept of exn
 
 let result_passed: 'a run_test_res_t -> bool = function
-    | Pass _ -> true
+    | PassResult _ | PassExcept _ -> true
     | _ -> false
 
 let run_test_res (name: string) (show_input: bool) (show_pass: bool) (test: 'a t): 'a run_test_res_t =
-    let show_failure (fail_str: string): unit =
+    let string_of_expected: string =
+        (match test.pass_pred with
+            | PredRes _ -> test.string_of_result (Option.get test.expected_result)
+            | PredExn _ -> test.except_cond_str
+        )
+    in let show_failure (fail_str: string): unit =
         Printf.printf "\n    Expected: %s\n      Actual: %s"
-            (test.string_of_result test.expected_result)
+            string_of_expected
             fail_str;
         print_newline ()
     (* Retrieve the result of comparing the expected result with the actual result *)
     in let fn_res =
-        try Res (Lazy.force test.actual_result_lazy)
-        with e -> Exn e
+        try Ok (Lazy.force test.actual_result_lazy)
+        with e -> Error e
     in let passed =
         match fn_res with
-            | Res actual_result -> test.pass_pred test.expected_result actual_result
-            | Exn _ -> false
+            | Ok actual_result -> (match test.pass_pred with
+                | PredRes pass_pred -> pass_pred (Option.get test.expected_result) actual_result
+                | PredExn _ -> false
+            )
+            | Error e -> (match test.pass_pred with
+                | PredRes _ -> false
+                | PredExn pass_pred -> pass_pred e
+            )
     (* Print PASS if passed and FAIL if failed along with the name associated with the test case *)
     in if not passed || show_pass then
         let () = print_string (if passed then "PASS" else "FAIL") in
@@ -76,15 +101,21 @@ let run_test_res (name: string) (show_input: bool) (show_pass: bool) (test: 'a t
             if show_pass
             then let () = print_string " OK" in print_newline ()
             else ()
-        in Pass (fn_res |> fn_res_get_res)
+        in (match fn_res with
+            | Ok res -> PassResult res
+            | Error e -> PassExcept e
+        )
     else
         match fn_res with
-            | Res actual_result ->
+            | Ok actual_result ->
                 let () = show_failure (test.string_of_result actual_result) in
-                FailureResult (fn_res |> fn_res_get_res)
-            | Exn e ->
-                let () = show_failure ("Exception occurred – " ^ (Printexc.to_string e)) in
-                FailureExcept (fn_res |> fn_res_get_exn)
+                FailureResult (Result.get_ok fn_res)
+            | Error e ->
+                (match test.pass_pred with
+                    | PredRes _ -> show_failure ("Exception occurred – " ^ Printexc.to_string e)
+                    | PredExn _ -> show_failure (test.string_of_exn e)
+                );
+                FailureExcept (Result.get_error fn_res)
 
 let run_test (name: string) (show_input: bool) (show_pass: bool) (test: 'a t): unit =
     let _ = run_test_res name show_input show_pass test in ()
@@ -95,7 +126,7 @@ int * int * int =
     (* Fold function to accumulate the results of each test *)
     let run_test_part ((num_passed, num_failed, num_err): int * int * int) (test: 'a t): int * int * int =
         match run_test_res name show_inputs show_passes test with
-            | Pass _ -> (num_passed + 1, num_failed, num_err)
+            | PassResult _ | PassExcept _ -> (num_passed + 1, num_failed, num_err)
             | FailureResult _ -> (num_passed, num_failed + 1, num_err)
             | FailureExcept _ -> (num_passed, num_failed, num_err + 1)
     in let (num_passed, num_failed, num_err) = List.fold_left run_test_part (0, 0, 0) tests
